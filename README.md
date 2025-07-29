@@ -34,29 +34,6 @@ A modular, extensible ASP.NET Core Web API for managing orders, products, custom
 - [.NET 8 SDK](https://dotnet.microsoft.com/download)
 - SQL Server (local or remote)
 
-### Configuration
-
-1. **Database Connection**
-
-   Edit `OrderManagmentSystem/appsettings.json`:
-   ```json
-   "ConnectionStrings": {
-     "DefaultConnection": "Server=.;Database=OrderManagementDb;Trusted_Connection=True;TrustServerCertificate=True"
-   }
-````
-
-2. **Mail Settings** (for notifications)
-
-   ```json
-   "MailSettings": {
-     "Email": "your-email@gmail.com",
-     "DisplayName": "Your Name",
-     "Password": "your-app-password",
-     "Host": "smtp.gmail.com",
-     "Port": "587"
-   }
-   ```
-
 ### Build & Run
 
 ```bash
