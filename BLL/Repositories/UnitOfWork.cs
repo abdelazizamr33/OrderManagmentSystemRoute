@@ -9,9 +9,9 @@ using System.Threading.Tasks;
 
 namespace BLL.Repositories
 {
-    public class UnitOfWork(OrderManagmentDbContext dbContext) : IUnitOfWork
+    public class UnitOfWork(OrderManagmentDbContext _dbContext) : IUnitOfWork
     {
-        private readonly OrderManagmentDbContext _dbContext = dbContext;
+        //private readonly OrderManagmentDbContext _dbContext = dbContext;
         private readonly Dictionary<string, object> _repositories = new Dictionary<string, object>();
 
         public IGenericRepository<TEntity> GetRepository<TEntity>() where TEntity : BaseEntity

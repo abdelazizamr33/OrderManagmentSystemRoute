@@ -33,7 +33,7 @@ namespace OrderManagmentSystem.Controllers
         // POST /api/users/login
         [HttpPost("login")]
         [AllowAnonymous]
-        public async Task<IActionResult> Login([FromBody] UserLoginDto loginDto)
+        public async Task<IActionResult> Login( UserLoginDto loginDto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);

@@ -20,5 +20,9 @@ namespace DAL.Models
         public UserRole Role { get; set; }
         // Navigation properties
         public virtual Customer? Customer { get; set; }
+        public User()
+        {
+            
+        }
     }
 }

@@ -13,14 +13,23 @@ namespace BLL.Repositories
     public class GenericRepository<TEntity> : IGenericRepository<TEntity> where TEntity : BaseEntity
     {
         private readonly OrderManagmentDbContext _dbcontext;
+        private OrderManagmentDbContext dbContext;
+
+        public GenericRepository(OrderManagmentDbContext dbContext, OrderManagmentDbContext dbcontext)
+        {
+            _dbcontext = dbcontext;
+        }
+
         public GenericRepository(OrderManagmentDbContext dbContext)
         {
-            
+            this.dbContext = dbContext;
         }
+
         public async Task<IEnumerable<TEntity>> GetAllAsync(bool TrackChanges)
         {
-            if(TrackChanges) return await _dbcontext.Set<TEntity>().ToListAsync();
+            if (TrackChanges) return await _dbcontext.Set<TEntity>().ToListAsync();
             else return await _dbcontext.Set<TEntity>().AsNoTracking().ToListAsync();
+
         }
 
         public async Task<TEntity?> GetByIdAsync(int id)
