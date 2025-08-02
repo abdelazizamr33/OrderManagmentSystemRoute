@@ -34,14 +34,31 @@ namespace BLL.Services
 
         public async Task<LoginResponseDto?> LoginAsync(UserLoginDto loginDto)
         {
+            Console.WriteLine($"Login attempt for username: {loginDto.Username}");
+            
             var user = await GetUserByUsernameAsync(loginDto.Username);
-            if (user == null) return null;
-
-            if (!VerifyPassword(loginDto.Password, user.PasswordHash))
+            if (user == null) 
+            {
+                // Debug: Check if any users exist at all
+                var allUsers = await unitOfWork.GetRepository<User>().GetAllAsync(false);
+                Console.WriteLine($"No user found with username '{loginDto.Username}'. Total users in DB: {allUsers.Count()}");
                 return null;
+            }
 
+            Console.WriteLine($"User found: {user.Username}, Role: {user.Role}, UserID: {user.UserID}");
+            
+            if (!VerifyPassword(loginDto.Password, user.PasswordHash))
+            {
+                Console.WriteLine("Password verification failed");
+                return null;
+            }
+
+            Console.WriteLine("Password verified successfully, generating token...");
+            
             var token = GenerateJwtToken(user);
             var expiresAt = DateTime.UtcNow.AddMinutes(60);
+
+            Console.WriteLine($"Token generated successfully. Expires at: {expiresAt}");
 
             return new LoginResponseDto
             {
@@ -99,6 +116,10 @@ namespace BLL.Services
         public string GenerateJwtToken(User user)
         {
             var jwtSettings = configuration.GetSection("JwtSettings");
+            Console.WriteLine($"JWT Settings - SecretKey length: {jwtSettings["SecretKey"]?.Length ?? 0}");
+            Console.WriteLine($"JWT Settings - Issuer: {jwtSettings["Issuer"]}");
+            Console.WriteLine($"JWT Settings - Audience: {jwtSettings["Audience"]}");
+            
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]!));
 
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -110,6 +131,8 @@ namespace BLL.Services
             new Claim(ClaimTypes.Role, user.Role.ToString())
         };
 
+            Console.WriteLine($"Creating JWT token for user: {user.Username}, Role: {user.Role}, UserID: {user.UserID}");
+
             var token = new JwtSecurityToken(
                 issuer: jwtSettings["Issuer"],
                 audience: jwtSettings["Audience"],
@@ -118,7 +141,10 @@ namespace BLL.Services
                 signingCredentials: credentials
             );
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+            Console.WriteLine($"JWT token generated successfully. Token length: {tokenString.Length}");
+            
+            return tokenString;
         }
 
         public async Task<User?> GetUserFromTokenAsync(string token)
@@ -161,9 +187,7 @@ namespace BLL.Services
 
         public async Task<User?> GetUserByUsernameAsync(string username)
         {
-            var users = await unitOfWork.GetRepository<User>().GetAllAsync(false);
-            var user = users.FirstOrDefault(u => u.Customer != null && u.Username == username);
-            return user;
+            return await unitOfWork.GetRepository<User>().GetByPredicateAsync(u => u.Username == username, u => u.Customer);
         }
         private static string HashPassword(string password)
         {

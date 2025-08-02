@@ -9,7 +9,8 @@ namespace DAL.Models.Enums
     public enum OrderStatus
     {
         Pending,
-        Confirmed,
+        Processing,
+        Completed,
         Shipped,
         Delivered,
         Cancelled

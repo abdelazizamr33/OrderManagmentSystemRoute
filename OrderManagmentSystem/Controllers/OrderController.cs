@@ -69,5 +69,14 @@ namespace OrderManagmentSystem.Controllers
             // TODO: Send email notification to customer about status change
             return Ok("Order status updated.");
         }
+
+        // Test endpoint for OrderItem creation
+        [HttpPost("test-orderitem")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> TestOrderItem(int orderId, int productId, int quantity)
+        {
+            var result = await _orderService.TestOrderItemCreation(orderId, productId, quantity);
+            return Ok(new { Success = result });
+        }
     }
 } 

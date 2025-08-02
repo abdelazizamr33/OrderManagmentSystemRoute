@@ -19,6 +19,8 @@ public class OrderService(IUnitOfWork unitOfWork, IMapper mapper) : IOrderServic
             throw new InvalidOperationException($"Customer with ID {customerId} not found");
         }
 
+        
+
         // Validate order items and check stock
         var orderItems = new List<OrderItem>();
         foreach (var item in createOrderDto.OrderItems)
@@ -67,12 +69,21 @@ public class OrderService(IUnitOfWork unitOfWork, IMapper mapper) : IOrderServic
                 Discount = 0 // Individual item discounts can be added here
             };
 
+
             await unitOfWork.GetRepository<OrderItem>().AddAsync(orderItem);
 
             // Update product stock
             product.Stock -= itemDto.Quantity;
             unitOfWork.GetRepository<Product>().Update(product);
         }
+
+        // Save OrderItems and updated products
+        await unitOfWork.SaveChangesAsync();
+
+        // Verify OrderItems were saved
+        var savedOrderItems = await unitOfWork.GetRepository<OrderItem>().GetAllAsync(false);
+        var orderItemsForThisOrder = savedOrderItems.OfType<OrderItem>().Where(oi => oi.OrderID == order.OrderID);
+        Console.WriteLine($"Verified OrderItems in database for Order {order.OrderID}: {orderItemsForThisOrder.Count()} items");
 
         // Generate invoice
         var invoice = new Invoice
@@ -114,9 +125,50 @@ public class OrderService(IUnitOfWork unitOfWork, IMapper mapper) : IOrderServic
         var order = await unitOfWork.GetRepository<Order>().GetByIdAsync(orderId);
         if (order == null) return false;
 
+        // Validate status transition
+        if (!IsValidStatusTransition(order.Status, status))
+        {
+            throw new InvalidOperationException($"Invalid status transition from {order.Status} to {status}");
+        }
+
         order.Status = status;
         unitOfWork.GetRepository<Order>().Update(order);
         await unitOfWork.SaveChangesAsync();
+        return true;
+    }
+
+    private bool IsValidStatusTransition(OrderStatus currentStatus, OrderStatus newStatus)
+    {
+        return newStatus switch
+        {
+            OrderStatus.Pending => currentStatus == OrderStatus.Pending, // Can only stay pending
+            OrderStatus.Processing => currentStatus == OrderStatus.Pending,
+            OrderStatus.Shipped => currentStatus == OrderStatus.Processing,
+            OrderStatus.Delivered => currentStatus == OrderStatus.Shipped,
+            OrderStatus.Completed => currentStatus == OrderStatus.Delivered,
+            OrderStatus.Cancelled => currentStatus == OrderStatus.Pending || currentStatus == OrderStatus.Processing,
+            _ => false
+        };
+    }
+
+    public async Task<bool> CompleteOrderAsync(int orderId)
+    {
+        var order = await unitOfWork.GetRepository<Order>().GetByIdAsync(orderId);
+        if (order == null) return false;
+
+        // Check if order can be completed
+        if (order.Status != OrderStatus.Delivered)
+        {
+            throw new InvalidOperationException($"Order must be in 'Delivered' status to be completed. Current status: {order.Status}");
+        }
+
+        order.Status = OrderStatus.Completed;
+        unitOfWork.GetRepository<Order>().Update(order);
+        await unitOfWork.SaveChangesAsync();
+        
+        // Note: OrderItems are kept for historical records
+        // They should never be deleted as they represent the actual order history
+        
         return true;
     }
 
@@ -147,5 +199,31 @@ public class OrderService(IUnitOfWork unitOfWork, IMapper mapper) : IOrderServic
         return totalAmount; // No discount
     }
 
-    
+    public async Task<bool> TestOrderItemCreation(int orderId, int productId, int quantity)
+    {
+        try
+        {
+            var orderItem = new OrderItem
+            {
+                OrderID = orderId,
+                ProductID = productId,
+                Quantity = quantity,
+                UnitPrice = 10.0,
+                Discount = 0
+            };
+
+            Console.WriteLine($"Testing OrderItem creation: OrderID={orderItem.OrderID}, ProductID={orderItem.ProductID}");
+            
+            await unitOfWork.GetRepository<OrderItem>().AddAsync(orderItem);
+            await unitOfWork.SaveChangesAsync();
+            
+            Console.WriteLine("Test OrderItem saved successfully");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating test OrderItem: {ex.Message}");
+            return false;
+        }
+    }
 }

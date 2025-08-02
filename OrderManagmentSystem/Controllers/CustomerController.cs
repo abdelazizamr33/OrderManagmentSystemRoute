@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using BLL.Interfaces.Services;
 using DAL.DTOs;
 using Microsoft.AspNetCore.Authorization;
+using DAL.Models.Enums;
 
 namespace OrderManagmentSystem.Controllers
 {

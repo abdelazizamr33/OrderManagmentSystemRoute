@@ -18,5 +18,6 @@ namespace BLL.Interfaces.Services
         Task<bool> UpdateOrderStatusAsync(int orderId, OrderStatus status);
         Task<double> CalculateOrderTotalAsync(List<OrderItemDto> orderItems);
         Task<double> ApplyDiscountAsync(double totalAmount);
+        Task<bool> TestOrderItemCreation(int orderId, int productId, int quantity);
     }
 }

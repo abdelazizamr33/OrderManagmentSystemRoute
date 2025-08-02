@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,23 +14,31 @@ namespace BLL.Repositories
     public class GenericRepository<TEntity> : IGenericRepository<TEntity> where TEntity : BaseEntity
     {
         private readonly OrderManagmentDbContext _dbcontext;
-        private OrderManagmentDbContext dbContext;
 
-        public GenericRepository(OrderManagmentDbContext dbContext, OrderManagmentDbContext dbcontext)
+        public GenericRepository(OrderManagmentDbContext dbcontext)
         {
             _dbcontext = dbcontext;
         }
 
-        public GenericRepository(OrderManagmentDbContext dbContext)
-        {
-            this.dbContext = dbContext;
-        }
+        
 
-        public async Task<IEnumerable<TEntity>> GetAllAsync(bool TrackChanges)
+        public async Task<IEnumerable<TEntity>> GetAllAsync(bool TrackChanges,
+    params Expression<Func<TEntity, object>>[] includes)
         {
-            if (TrackChanges) return await _dbcontext.Set<TEntity>().ToListAsync();
-            else return await _dbcontext.Set<TEntity>().AsNoTracking().ToListAsync();
+            IQueryable<TEntity> query = _dbcontext.Set<TEntity>();
 
+            if (!TrackChanges)
+                query = query.AsNoTracking();
+
+            if (includes != null && includes.Length > 0)
+            {
+                foreach (var include in includes)
+                {
+                    query = query.Include(include);
+                }
+            }
+
+            return await query.ToListAsync();
         }
 
         public async Task<TEntity?> GetByIdAsync(int id)
@@ -52,6 +61,19 @@ namespace BLL.Repositories
             _dbcontext.Set<TEntity>().Remove(entity);
         }
 
-        
+        public async Task<TEntity?> GetByPredicateAsync(Expression<Func<TEntity, bool>> predicate, params Expression<Func<TEntity, object>>[] includes)
+        {
+            IQueryable<TEntity> query = _dbcontext.Set<TEntity>();
+
+            if (includes != null && includes.Length > 0)
+            {
+                foreach (var include in includes)
+                {
+                    query = query.Include(include);
+                }
+            }
+
+            return await query.FirstOrDefaultAsync(predicate);
+        }
     }
 }

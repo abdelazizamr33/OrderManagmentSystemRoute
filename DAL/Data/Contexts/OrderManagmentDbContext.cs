@@ -10,17 +10,19 @@ namespace DAL.Data.Contexts
 {
     public class OrderManagmentDbContext: DbContext
     {
-        public OrderManagmentDbContext(DbContextOptions<OrderManagmentDbContext> options) : base(options)
-        {
+        public OrderManagmentDbContext(DbContextOptions<OrderManagmentDbContext> options)
+        : base(options)
+        { 
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
             modelBuilder.Entity<User>()
                 .HasOne(u => u.Customer)
                 .WithOne(c => c.User)
-                .HasForeignKey<Customer>(c => c.CustomerId);
-            // Add any additional model configurations here
+                .HasForeignKey<Customer>(c => c.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
         
         public DbSet<Customer> Customers { get; set; }
